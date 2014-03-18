@@ -22,8 +22,31 @@ param(
     Start-ChocolateyProcessAsAdmin "cmd.exe $windowsFeaturesArgs" -nosleep
     Create-InstallLogIfNotExists $chocoInstallLog
     $installOutput = Get-Content $chocoInstallLog -Encoding Ascii
+    
+    $skippedHeader = $false
+    $skippedDashes = $false
     foreach ($line in $installOutput) {
-      Write-Host $line
+      if (!$skippedHeader){
+        $skippedHeader = $line.StartsWith('Feature Name')
+        continue
+      }
+      if (!$skippedDashes){
+        $skippedDashes = $line.StartsWith('-------')
+        continue
+      }
+      if ($line.Length -eq 0){
+        continue
+      }
+      $parts = $line.split('|')
+      if ($parts.Length -lt 2){
+        continue
+      }
+      $featureName = $parts[0].Trim()
+      $featureStatus = $parts[1]
+      
+      if (!$localOnly -or $featureStatus.Contains('Enabled')){
+        Write-Host "$featureName 1"
+      }
     }
   } else {
     $params = @()
